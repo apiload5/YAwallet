@@ -5,6 +5,13 @@ echo "========================================"
 echo "  YaWallet - Starting Application"
 echo "========================================"
 
+# Wait for postgres to be ready
+echo "Waiting for postgres..."
+while ! nc -z db 5432; do
+  sleep 0.5
+done
+echo "PostgreSQL is up - starting"
+
 # Run migrations
 echo "Running migrations..."
 python manage.py migrate --noinput
@@ -17,7 +24,7 @@ python manage.py collectstatic --noinput
 if [ "${SEED_DATABASE:-false}" = "true" ]; then
     echo "Seeding database..."
     python manage.py seed
-fi
+fi  # <-- ye missing tha
 
 echo "========================================"
 echo "  ✓ YaWallet is ready!"
