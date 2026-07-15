@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: yawallet
+    runtime: docker
+    repo: https://github.com/apiload5/YAwallet
+    plan: starter
+    envVars:
+      - key: DB_NAME
+        value: yawallet
+      - key: DB_USER
+        value: yawallet_user
+      - key: DB_PASSWORD
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: false
