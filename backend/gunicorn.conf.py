@@ -1,33 +1,48 @@
 import multiprocessing
 import os
 
-# Bind to port
+# Server socket
 bind = "0.0.0.0:8000"
+backlog = 2048
 
-# Number of workers
+# Worker processes
 workers = multiprocessing.cpu_count() * 2 + 1
-
-# Worker class
 worker_class = "sync"
-
-# Timeout
+worker_connections = 1000
+max_requests = 1000
+max_requests_jitter = 100
 timeout = 120
-
-# Logging
-accesslog = "/var/log/gunicorn/access.log"
-errorlog = "/var/log/gunicorn/error.log"
-loglevel = "info"
-
-# Preload application
-preload_app = True
-
-# Graceful timeout
 graceful_timeout = 30
-
-# Keep alive
 keepalive = 5
 
-# Environment variables
+# User and group (use if running as root, otherwise comment out)
+# user = "django"
+# group = "django"
+
+# Logging
+accesslog = "-"
+errorlog = "-"
+loglevel = "info"
+
+# Process naming
+proc_name = "yawallet"
+
+# Server mechanics
+daemon = False
+pidfile = None
+umask = 0
+user = None
+group = None
+tmp_upload_dir = None
+
+# SSL (uncomment when using HTTPS)
+# keyfile = "/etc/nginx/ssl/yawallet.key"
+# certfile = "/etc/nginx/ssl/yawallet.crt"
+
+# Preload app
+preload_app = True
+
+# Environment
 raw_env = [
     f"DJANGO_SETTINGS_MODULE={os.environ.get('DJANGO_SETTINGS_MODULE', 'yawallet.settings')}",
 ]
