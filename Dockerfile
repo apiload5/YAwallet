@@ -4,11 +4,12 @@ FROM python:3.12-slim
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (INCLUDING netcat)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     curl \
+    netcat-openbsd \      # ← YEH ADD KARO
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -27,7 +28,6 @@ ENV DJANGO_SETTINGS_MODULE=yawallet.settings
 ENV PYTHONUNBUFFERED=1
 
 # Make entrypoint executable
-COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Expose port
