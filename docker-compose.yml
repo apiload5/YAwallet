@@ -72,11 +72,6 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   celery:
     build:
@@ -88,8 +83,10 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: celery -A yawallet worker --loglevel=info --concurrency=4 --max-tasks-per-child=100
     networks:
       - yawallet_network
@@ -109,8 +106,10 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: celery -A yawallet beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     networks:
       - yawallet_network
