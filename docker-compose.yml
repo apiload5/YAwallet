@@ -3,18 +3,17 @@ services:
     image: postgres:16-alpine
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-yawallet}
+      POSTGRES_USER: ${DB_USER:-yawallet_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
       POSTGRES_INITDB_ARGS: "--data-checksums"
     command: postgres -c 'max_connections=200' -c 'shared_buffers=256MB'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yawallet_user}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,9 +47,12 @@ services:
         max-file: "3"
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
-    env_file: .env
+    env_file:
+      - .env
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -77,9 +79,12 @@ services:
       retries: 3
 
   celery:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
-    env_file: .env
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:
@@ -95,9 +100,12 @@ services:
         max-file: "3"
 
   celery-beat:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
-    env_file: .env
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:
@@ -133,25 +141,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-  pgbackups:
-    image: prodrigestivill/postgres-backup-local:latest
-    restart: always
-    env_file: .env
-    environment:
-      POSTGRES_HOST: db
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_EXTRA_OPTS: "-Z6 --schema=public --blobs"
-      SCHEDULE: "@daily"
-      BACKUP_KEEP_DAYS: 7
-    volumes:
-      - ./backups:/backups
-    depends_on:
-      - db
-    networks:
-      - yawallet_network
 
 networks:
   yawallet_network:
