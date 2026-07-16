@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 
+
 class AuditLog(models.Model):
     """Audit log model for tracking user actions"""
     
@@ -20,6 +21,7 @@ class AuditLog(models.Model):
     
     class Meta:
         db_table = 'audit_logs'
+        app_label = 'audit'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'created_at']),
