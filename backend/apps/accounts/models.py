@@ -61,7 +61,7 @@ class User(AbstractUser):
     
     # Device management
     devices = models.JSONField(default=list)
-    max_devices = models.IntegerField(default=settings.MAX_DEVICES_PER_USER if hasattr(settings, 'MAX_DEVICES_PER_USER') else 3)
+    max_devices = models.IntegerField(default=3)
     
     # Security
     login_attempts = models.IntegerField(default=0)
@@ -167,3 +167,58 @@ class User(AbstractUser):
             if encryption_manager.encrypt(user.phone) == encrypted_phone:
                 return user
         return None
+
+
+class KYCDocument(models.Model):
+    """KYC Document model"""
+    
+    user = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.PROTECT,
+        related_name='kyc_documents'
+    )
+    
+    document_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('CNIC_FRONT', 'CNIC Front'),
+            ('CNIC_BACK', 'CNIC Back'),
+            ('SELFIE', 'Selfie'),
+        ]
+    )
+    
+    file_url = models.URLField(max_length=500)
+    file_name = models.CharField(max_length=255)
+    
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDING', 'Pending'),
+            ('VERIFIED', 'Verified'),
+            ('REJECTED', 'Rejected'),
+        ],
+        default='PENDING'
+    )
+    rejection_reason = models.TextField(null=True, blank=True)
+    
+    verified_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_documents'
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'kyc_documents'
+        unique_together = [['user', 'document_type']]
+        indexes = [
+            models.Index(fields=['user', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.full_name} - {self.document_type}"
