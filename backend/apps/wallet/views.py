@@ -6,8 +6,10 @@ from decimal import Decimal
 from apps.wallet.models import Wallet
 from apps.wallet.serializers import WalletSerializer, AddMoneySerializer
 from apps.transactions.models import Transaction
+from apps.transactions.serializers import TransactionSerializer
 from apps.core.permissions import IsNotBlocked, IsKYCVerified, IsWalletActive
 from apps.audit.models import AuditLog
+from django.utils import timezone
 
 
 class WalletBalanceView(generics.RetrieveAPIView):
@@ -47,7 +49,8 @@ class AddMoneyView(generics.GenericAPIView):
                 net_amount=amount,
                 status='SUCCESS',
                 payment_method=payment_method,
-                description=f"Add money via {payment_method}"
+                description=f"Add money via {payment_method}",
+                completed_at=timezone.now()
             )
             
             # Log audit
@@ -77,12 +80,8 @@ class AddMoneyView(generics.GenericAPIView):
 class WalletHistoryView(generics.ListAPIView):
     """View for wallet transaction history"""
     
+    serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated, IsNotBlocked]
     
     def get_queryset(self):
-        from apps.transactions.models import Transaction
         return Transaction.objects.filter(user=self.request.user).order_by('-created_at')
-    
-    def get_serializer_class(self):
-        from apps.transactions.serializers import TransactionSerializer
-        return TransactionSerializer
