@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
+from django.utils import timezone
 from apps.accounts.models import User, KYCDocument
-from apps.accounts.serializers import UserSerializer
+
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -67,6 +68,7 @@ class CustomUserAdmin(UserAdmin):
             user.unblock()
         self.message_user(request, f"{queryset.count()} users unblocked.")
     unblock_users.short_description = "Unblock selected users"
+
 
 @admin.register(KYCDocument)
 class KYCDocumentAdmin(admin.ModelAdmin):
