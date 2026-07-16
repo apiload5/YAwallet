@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import uuid
 import secrets
 
+
 class UserManager(models.Manager):
     """Custom user manager"""
     
@@ -27,6 +28,7 @@ class UserManager(models.Manager):
         extra_fields.setdefault('is_active', True)
         
         return self.create_user(phone, password, **extra_fields)
+
 
 class User(AbstractUser):
     """Custom user model"""
@@ -58,8 +60,8 @@ class User(AbstractUser):
     kyc_verified_at = models.DateTimeField(null=True, blank=True)
     
     # Device management
-    devices = models.JSONField(default=list)  # List of device IDs
-    max_devices = models.IntegerField(default=settings.MAX_DEVICES_PER_USER)
+    devices = models.JSONField(default=list)
+    max_devices = models.IntegerField(default=settings.MAX_DEVICES_PER_USER if hasattr(settings, 'MAX_DEVICES_PER_USER') else 3)
     
     # Security
     login_attempts = models.IntegerField(default=0)
@@ -152,68 +154,16 @@ class User(AbstractUser):
     
     def get_encrypted_phone(self) -> str:
         """Get encrypted phone number"""
-        return encryption_manager.encrypt(self.phone)
+        if encryption_manager:
+            return encryption_manager.encrypt(self.phone)
+        return self.phone
     
     @classmethod
     def get_by_encrypted_phone(cls, encrypted_phone: str):
         """Get user by encrypted phone"""
-        # This is not efficient, but for demo purposes
-        # In production, use a different approach
+        if not encryption_manager:
+            return None
         for user in cls.objects.all():
             if encryption_manager.encrypt(user.phone) == encrypted_phone:
                 return user
         return None
-
-class KYCDocument(models.Model):
-    """KYC Document model"""
-    
-    user = models.ForeignKey(
-        'accounts.User',
-        on_delete=models.PROTECT,
-        related_name='kyc_documents'
-    )
-    
-    document_type = models.CharField(
-        max_length=20,
-        choices=[
-            ('CNIC_FRONT', 'CNIC Front'),
-            ('CNIC_BACK', 'CNIC Back'),
-            ('SELFIE', 'Selfie'),
-        ]
-    )
-    
-    file_url = models.URLField(max_length=500)
-    file_name = models.CharField(max_length=255)
-    
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ('PENDING', 'Pending'),
-            ('VERIFIED', 'Verified'),
-            ('REJECTED', 'Rejected'),
-        ],
-        default='PENDING'
-    )
-    rejection_reason = models.TextField(null=True, blank=True)
-    
-    verified_by = models.ForeignKey(
-        'accounts.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='verified_documents'
-    )
-    verified_at = models.DateTimeField(null=True, blank=True)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'kyc_documents'
-        unique_together = [['user', 'document_type']]
-        indexes = [
-            models.Index(fields=['user', 'status']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user.full_name} - {self.document_type}"
