@@ -1,0 +1,38 @@
+backend/
+├── apps/
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── constants.py      ← YEH FILE BANAO
+│   │   ├── encryption.py
+│   │   ├── exceptions.py
+│   │   ├── permissions.py
+│   │   ├── pagination.py
+│   │   └── throttling.py
+│   ├── accounts/
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   └── admin.py
+│   ├── wallet/
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   └── urls.py
+│   └── transactions/
+│       ├── __init__.py
+│       ├── models.py
+│       ├── serializers.py
+│       └── views.py
+├── yawallet/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── manage.py
+├── entrypoint.sh
+└── nginx/
+    └── nginx.conf
