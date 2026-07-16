@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from decouple import config
+from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -61,7 +62,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
-        # 'apps.core.authentication.FirebaseAuthentication',  # Commented out for now
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
@@ -81,3 +81,8 @@ TRANSACTION_FEE_MIN = float(config('TRANSACTION_FEE_MIN', default=10.0))
 
 # Auth User Model
 AUTH_USER_MODEL = 'accounts.User'
+
+# ============================================
+# ENCRYPTION KEY - ADD THIS LINE
+# ============================================
+ENCRYPTION_KEY = config('ENCRYPTION_KEY', default=Fernet.generate_key().decode())
