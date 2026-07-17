@@ -7,7 +7,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-key')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
+# ============================================
+# ALLOWED_HOSTS - ADD YOUR RENDER URL
+# ============================================
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    'yawallet.onrender.com',      # ← YEH ADD KARO
+    '*.onrender.com',              # ← YEH BHI ADD KARO
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -61,29 +71,13 @@ TEMPLATES = [
 ROOT_URLCONF = 'yawallet.urls'
 WSGI_APPLICATION = 'yawallet.wsgi.application'
 
-# ============================================
-# DATABASE - Use SQLite for now (no PostgreSQL needed)
-# ============================================
+# SQLite Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# ============================================
-# Comment out PostgreSQL for now
-# ============================================
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': config('DB_NAME', default='yawallet'),
-#         'USER': config('DB_USER', default='yawallet_user'),
-#         'PASSWORD': config('DB_PASSWORD', default='secure_password'),
-#         'HOST': config('DB_HOST', default='localhost'),
-#         'PORT': config('DB_PORT', default='5432'),
-#     }
-# }
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -102,10 +96,7 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
 }
 
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+CORS_ALLOW_ALL_ORIGINS = True
 
 TRANSACTION_FEE_PERCENT = float(config('TRANSACTION_FEE_PERCENT', default=1.0))
 TRANSACTION_FEE_MIN = float(config('TRANSACTION_FEE_MIN', default=10.0))
