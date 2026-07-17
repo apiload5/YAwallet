@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import RegexValidator
 from django.conf import settings
@@ -8,8 +8,11 @@ from apps.core.constants import KYC_STATUS_CHOICES, DEVICE_TYPES
 from datetime import datetime, timedelta
 
 
-class UserManager(models.Manager):
-    """Custom user manager"""
+# ============================================
+# CUSTOM USER MANAGER - FIX get_by_natural_key
+# ============================================
+class UserManager(BaseUserManager):
+    """Custom user manager with phone as username"""
     
     def create_user(self, phone, password=None, **extra_fields):
         if not phone:
@@ -24,13 +27,25 @@ class UserManager(models.Manager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        
         return self.create_user(phone, password, **extra_fields)
+    
+    # ============================================
+    # FIX: Add get_by_natural_key method
+    # ============================================
+    def get_by_natural_key(self, phone):
+        return self.get(phone=phone)
 
 
 class User(AbstractUser):
-    """Custom user model"""
+    """Custom user model with phone as username"""
     
-    username = None
+    username = None  # Remove username field
     phone = models.CharField(
         max_length=15,
         unique=True,
@@ -67,12 +82,9 @@ class User(AbstractUser):
     # Timestamps
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     last_login_device = models.CharField(max_length=255, null=True, blank=True)
-    
-    # ============================================
-    # ADD THIS - created_at field
-    # ============================================
     created_at = models.DateTimeField(auto_now_add=True)
     
+    # Use custom manager
     objects = UserManager()
     
     USERNAME_FIELD = 'phone'
