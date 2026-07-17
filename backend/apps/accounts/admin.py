@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.utils.html import format_html
 from django.utils import timezone
 from apps.accounts.models import User, KYCDocument
 
@@ -11,18 +10,18 @@ class CustomUserAdmin(UserAdmin):
     
     list_display = [
         'full_name', 'phone', 'email', 'kyc_status', 
-        'is_blocked', 'is_active', 'created_at'
+        'is_blocked', 'is_active'
     ]
-    list_filter = ['kyc_status', 'is_blocked', 'is_active', 'created_at']
+    list_filter = ['kyc_status', 'is_blocked', 'is_active']
     search_fields = ['phone', 'full_name', 'email']
-    ordering = ['-created_at']
+    ordering = ['-id']
     
     fieldsets = (
         (None, {'fields': ('phone', 'full_name', 'email', 'password')}),
         ('KYC Status', {'fields': ('kyc_status', 'kyc_rejection_reason')}),
         ('Security', {'fields': ('is_blocked', 'block_reason', 'is_active')}),
         ('Permissions', {'fields': ('is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined', 'created_at')}),
     )
     
     add_fieldsets = (
@@ -32,12 +31,11 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
     
-    readonly_fields = ['last_login', 'date_joined']
+    readonly_fields = ['last_login', 'date_joined', 'created_at']
     
     actions = ['approve_kyc', 'reject_kyc', 'block_users', 'unblock_users']
     
     def approve_kyc(self, request, queryset):
-        """Approve KYC for selected users"""
         for user in queryset:
             if user.kyc_status == 'PENDING':
                 user.kyc_status = 'APPROVED'
@@ -47,7 +45,6 @@ class CustomUserAdmin(UserAdmin):
     approve_kyc.short_description = "Approve KYC for selected users"
     
     def reject_kyc(self, request, queryset):
-        """Reject KYC for selected users"""
         for user in queryset:
             if user.kyc_status == 'PENDING':
                 user.kyc_status = 'REJECTED'
@@ -56,14 +53,12 @@ class CustomUserAdmin(UserAdmin):
     reject_kyc.short_description = "Reject KYC for selected users"
     
     def block_users(self, request, queryset):
-        """Block selected users"""
         for user in queryset:
             user.block("Blocked by admin")
         self.message_user(request, f"{queryset.count()} users blocked.")
     block_users.short_description = "Block selected users"
     
     def unblock_users(self, request, queryset):
-        """Unblock selected users"""
         for user in queryset:
             user.unblock()
         self.message_user(request, f"{queryset.count()} users unblocked.")
@@ -82,7 +77,6 @@ class KYCDocumentAdmin(admin.ModelAdmin):
     actions = ['verify_documents', 'reject_documents']
     
     def verify_documents(self, request, queryset):
-        """Verify selected documents"""
         for doc in queryset:
             doc.status = 'VERIFIED'
             doc.verified_at = timezone.now()
@@ -91,7 +85,6 @@ class KYCDocumentAdmin(admin.ModelAdmin):
     verify_documents.short_description = "Verify selected documents"
     
     def reject_documents(self, request, queryset):
-        """Reject selected documents"""
         for doc in queryset:
             doc.status = 'REJECTED'
             doc.save(update_fields=['status'])
