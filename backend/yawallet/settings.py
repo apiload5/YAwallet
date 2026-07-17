@@ -3,22 +3,26 @@ from pathlib import Path
 from decouple import config
 from cryptography.fernet import Fernet
 
+# Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ============================================
+# SECURITY SETTINGS
+# ============================================
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-key')
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-# ============================================
-# ALLOWED_HOSTS - ADD YOUR RENDER URL
-# ============================================
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '0.0.0.0',
-    'yawallet.onrender.com',      # ← YEH ADD KARO
-    '*.onrender.com',              # ← YEH BHI ADD KARO
+    'yawallet.onrender.com',
+    '*.onrender.com',
 ]
 
+# ============================================
+# INSTALLED APPS
+# ============================================
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,6 +44,9 @@ INSTALLED_APPS = [
     'apps.notifications',
 ]
 
+# ============================================
+# MIDDLEWARE
+# ============================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -52,6 +59,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ============================================
+# TEMPLATES
+# ============================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -68,10 +78,15 @@ TEMPLATES = [
     },
 ]
 
+# ============================================
+# URL & WSGI
+# ============================================
 ROOT_URLCONF = 'yawallet.urls'
 WSGI_APPLICATION = 'yawallet.wsgi.application'
 
-# SQLite Database
+# ============================================
+# DATABASE (SQLite for deployment)
+# ============================================
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -79,6 +94,21 @@ DATABASES = {
     }
 }
 
+# ============================================
+# AUTH USER MODEL
+# ============================================
+AUTH_USER_MODEL = 'accounts.User'
+
+# ============================================
+# AUTHENTICATION BACKENDS - FIX ADMIN LOGIN
+# ============================================
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# ============================================
+# STATIC & MEDIA FILES
+# ============================================
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
@@ -86,6 +116,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ============================================
+# REST FRAMEWORK
+# ============================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
@@ -96,11 +129,70 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
 }
 
+# ============================================
+# CORS
+# ============================================
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
+# ============================================
+# TRANSACTION FEES
+# ============================================
 TRANSACTION_FEE_PERCENT = float(config('TRANSACTION_FEE_PERCENT', default=1.0))
 TRANSACTION_FEE_MIN = float(config('TRANSACTION_FEE_MIN', default=10.0))
 
-AUTH_USER_MODEL = 'accounts.User'
-
+# ============================================
+# ENCRYPTION
+# ============================================
 ENCRYPTION_KEY = config('ENCRYPTION_KEY', default=Fernet.generate_key().decode())
+
+# ============================================
+# CSRF & SECURITY
+# ============================================
+CSRF_TRUSTED_ORIGINS = [
+    'https://yawallet.onrender.com',
+    'http://yawallet.onrender.com',
+]
+
+# ============================================
+# SESSION SETTINGS
+# ============================================
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_SAVE_EVERY_REQUEST = True
+
+# ============================================
+# LOGIN URLS
+# ============================================
+LOGIN_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/admin/'
+
+# ============================================
+# JAZZMIN ADMIN THEME
+# ============================================
+JAZZMIN_SETTINGS = {
+    "site_title": "YaWallet Admin",
+    "site_header": "YaWallet",
+    "site_brand": "YaWallet Admin",
+    "welcome_sign": "Welcome to YaWallet Admin Panel",
+    "copyright": "YaWallet",
+    "search_model": "accounts.User",
+    "topmenu_links": [
+        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Support", "url": "https://yawallet.com/support", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "accounts.User": "fas fa-user",
+        "accounts.KYCDocument": "fas fa-id-card",
+        "wallet.Wallet": "fas fa-wallet",
+        "transactions.Transaction": "fas fa-exchange-alt",
+        "audit.AuditLog": "fas fa-history",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": True,
+}
