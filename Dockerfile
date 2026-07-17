@@ -11,17 +11,16 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend folder contents to /app
+# Copy backend folder
 COPY backend/ /app/
 
-# Copy root files
+# Copy root files (entrypoint.sh is in root)
+COPY entrypoint.sh /app/entrypoint.sh
 COPY manage.py /app/
 COPY gunicorn.conf.py /app/
-COPY entrypoint.sh /app/
 
 RUN mkdir -p /app/logs /app/staticfiles /app/media
 
-# Set Python path
 ENV PYTHONPATH=/app
 ENV DJANGO_SETTINGS_MODULE=yawallet.settings
 ENV PYTHONUNBUFFERED=1
