@@ -6,8 +6,6 @@ from django.conf import settings
 from apps.core.encryption import encryption_manager
 from apps.core.constants import KYC_STATUS_CHOICES, DEVICE_TYPES
 from datetime import datetime, timedelta
-import uuid
-import secrets
 
 
 class UserManager(models.Manager):
@@ -26,14 +24,13 @@ class UserManager(models.Manager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
-        
         return self.create_user(phone, password, **extra_fields)
 
 
 class User(AbstractUser):
     """Custom user model"""
     
-    username = None  # Remove username field
+    username = None
     phone = models.CharField(
         max_length=15,
         unique=True,
@@ -71,6 +68,11 @@ class User(AbstractUser):
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     last_login_device = models.CharField(max_length=255, null=True, blank=True)
     
+    # ============================================
+    # ADD THIS - created_at field
+    # ============================================
+    created_at = models.DateTimeField(auto_now_add=True)
+    
     objects = UserManager()
     
     USERNAME_FIELD = 'phone'
@@ -81,30 +83,27 @@ class User(AbstractUser):
         indexes = [
             models.Index(fields=['phone', 'is_active']),
             models.Index(fields=['kyc_status', 'is_blocked']),
+            models.Index(fields=['created_at']),
         ]
     
     def __str__(self):
         return f"{self.full_name} ({self.phone})"
     
     def set_transaction_pin(self, pin: str):
-        """Hash and set transaction PIN"""
         self.transaction_pin = make_password(pin)
         self.save(update_fields=['transaction_pin'])
     
     def verify_transaction_pin(self, pin: str) -> bool:
-        """Verify transaction PIN"""
         if not self.transaction_pin:
             return False
         return check_password(pin, self.transaction_pin)
     
     def can_add_device(self, device_id: str) -> bool:
-        """Check if device can be added"""
         if len(self.devices) >= self.max_devices:
             return False
         return device_id not in self.devices
     
     def add_device(self, device_id: str):
-        """Add a new device"""
         if self.can_add_device(device_id):
             self.devices.append(device_id)
             self.save(update_fields=['devices'])
@@ -112,7 +111,6 @@ class User(AbstractUser):
         return False
     
     def remove_device(self, device_id: str):
-        """Remove a device"""
         if device_id in self.devices:
             self.devices.remove(device_id)
             self.save(update_fields=['devices'])
@@ -120,53 +118,37 @@ class User(AbstractUser):
         return False
     
     def increment_login_attempts(self):
-        """Increment login attempts and lock if needed"""
         self.login_attempts += 1
         if self.login_attempts >= 5:
             self.locked_until = datetime.now() + timedelta(minutes=15)
         self.save(update_fields=['login_attempts', 'locked_until'])
     
     def reset_login_attempts(self):
-        """Reset login attempts"""
         self.login_attempts = 0
         self.locked_until = None
         self.save(update_fields=['login_attempts', 'locked_until'])
     
     def is_locked(self) -> bool:
-        """Check if user is locked"""
         if self.locked_until and datetime.now() < self.locked_until:
             return True
         return False
     
     def block(self, reason: str):
-        """Block user"""
         self.is_blocked = True
         self.block_reason = reason
         self.blocked_at = datetime.now()
         self.save(update_fields=['is_blocked', 'block_reason', 'blocked_at'])
     
     def unblock(self):
-        """Unblock user"""
         self.is_blocked = False
         self.block_reason = None
         self.blocked_at = None
         self.save(update_fields=['is_blocked', 'block_reason', 'blocked_at'])
     
     def get_encrypted_phone(self) -> str:
-        """Get encrypted phone number"""
         if encryption_manager:
             return encryption_manager.encrypt(self.phone)
         return self.phone
-    
-    @classmethod
-    def get_by_encrypted_phone(cls, encrypted_phone: str):
-        """Get user by encrypted phone"""
-        if not encryption_manager:
-            return None
-        for user in cls.objects.all():
-            if encryption_manager.encrypt(user.phone) == encrypted_phone:
-                return user
-        return None
 
 
 class KYCDocument(models.Model):
