@@ -42,9 +42,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# ============================================
-# TEMPLATES - ADD THIS COMPLETE SECTION
-# ============================================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -64,16 +61,29 @@ TEMPLATES = [
 ROOT_URLCONF = 'yawallet.urls'
 WSGI_APPLICATION = 'yawallet.wsgi.application'
 
+# ============================================
+# DATABASE - Use SQLite for now (no PostgreSQL needed)
+# ============================================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='yawallet'),
-        'USER': config('DB_USER', default='yawallet_user'),
-        'PASSWORD': config('DB_PASSWORD', default='secure_password'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# ============================================
+# Comment out PostgreSQL for now
+# ============================================
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME', default='yawallet'),
+#         'USER': config('DB_USER', default='yawallet_user'),
+#         'PASSWORD': config('DB_PASSWORD', default='secure_password'),
+#         'HOST': config('DB_HOST', default='localhost'),
+#         'PORT': config('DB_PORT', default='5432'),
+#     }
+# }
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
