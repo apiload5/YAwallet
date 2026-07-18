@@ -3,7 +3,9 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class Command(BaseCommand):
@@ -16,9 +18,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Get from environment or arguments
-        phone = options.get('phone') or os.environ.get('ADMIN_PHONE', '03182724436')
-        password = options.get('password') or os.environ.get('ADMIN_PASSWORD', 'Popup0921')
+        phone = options.get('phone') or os.environ.get('ADMIN_PHONE', '923001234567')
+        password = options.get('password') or os.environ.get('ADMIN_PASSWORD', 'admin123')
         full_name = options.get('name') or os.environ.get('ADMIN_NAME', 'Admin')
+
+        self.stdout.write(f'📱 Creating admin with phone: {phone}')
 
         # Check if user exists
         if User.objects.filter(phone=phone).exists():
@@ -26,14 +30,37 @@ class Command(BaseCommand):
             return
 
         try:
-            # Create superuser with correct arguments
-            User.objects.create_superuser(
-                phone=phone,
-                full_name=full_name,
-                password=password
-            )
+            # Try different approaches for superuser creation
+            try:
+                # Method 1: Standard create_superuser
+                User.objects.create_superuser(
+                    phone=phone,
+                    full_name=full_name,
+                    password=password
+                )
+            except TypeError:
+                # Method 2: If UserManager expects different arguments
+                try:
+                    User.objects.create_superuser(
+                        phone=phone,
+                        password=password
+                    )
+                except TypeError:
+                    # Method 3: Create user then mark as superuser
+                    user = User.objects.create_user(
+                        phone=phone,
+                        full_name=full_name,
+                        password=password
+                    )
+                    user.is_superuser = True
+                    user.is_staff = True
+                    user.save()
+            
             self.stdout.write(self.style.SUCCESS(f'✅ Admin created successfully!'))
             self.stdout.write(self.style.SUCCESS(f'   Phone: {phone}'))
             self.stdout.write(self.style.SUCCESS(f'   Name: {full_name}'))
+            
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'❌ Failed to create admin: {str(e)}'))
+            logger.error(f'Admin creation failed: {str(e)}')
+            raise
