@@ -1,33 +1,42 @@
+# Use Python 3.12 slim image
 FROM python:3.12-slim
 
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=settings \
+    PORT=8000
+
+# Set work directory
 WORKDIR /app
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libpq-dev \
+    netcat-openbsd \
     gcc \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy backend folder
-COPY backend/ /app/
+# Copy project files
+COPY . .
 
-# Copy root files (entrypoint.sh is in root)
-COPY entrypoint.sh /app/entrypoint.sh
-COPY manage.py /app/
-COPY gunicorn.conf.py /app/
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-RUN mkdir -p /app/logs /app/staticfiles /app/media
+# Copy render build script (optional, for Render)
+COPY render-build.sh /render-build.sh
+RUN chmod +x /render-build.sh
 
-ENV PYTHONPATH=/app
-ENV DJANGO_SETTINGS_MODULE=yawallet.settings
-ENV PYTHONUNBUFFERED=1
+# Create necessary directories
+RUN mkdir -p /app/staticfiles /app/media
 
-RUN chmod +x /app/entrypoint.sh
+# Use entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 
-EXPOSE 8000
-
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "yawallet.wsgi:application"]
+# Start command
+CMD ["gunicorn", "wsgi:application", "--bind", "0.0.0.0:8000"]
