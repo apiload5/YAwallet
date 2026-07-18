@@ -1,17 +1,57 @@
 services:
+  # Option 1: Docker build (if using paid Render plan)
   - type: web
-    name: yawallet
-    runtime: docker
-    repo: https://github.com/apiload5/YAwallet
-    plan: starter
+    name: yawallet-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
-      - key: DB_NAME
-        value: yawallet
-      - key: DB_USER
-        value: yawallet_user
-      - key: DB_PASSWORD
-        sync: false
-      - key: SECRET_KEY
-        sync: false
+      - key: DJANGO_SETTINGS_MODULE
+        value: settings
       - key: DEBUG
-        value: false
+        value: "False"
+      - key: ADMIN_PHONE
+        value: 923001234567
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: ADMIN_NAME
+        value: Admin
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yawallet-db
+          property: connectionString
+    healthCheckPath: /api/health/
+    autoDeploy: true
+
+  # Option 2: Python build (if using free Render plan)
+  - type: web
+    name: yawallet-backend-python
+    env: python
+    buildCommand: |
+      chmod +x render-build.sh
+      ./render-build.sh
+    startCommand: |
+      gunicorn wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: settings
+      - key: DEBUG
+        value: "False"
+      - key: ADMIN_PHONE
+        value: 923001234567
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: ADMIN_NAME
+        value: Admin
+      - key: DATABASE_URL
+        fromDatabase:
+          name: yawallet-db
+          property: connectionString
+    healthCheckPath: /api/health/
+    autoDeploy: true
+
+databases:
+  - name: yawallet-db
+    databaseName: yawallet
+    user: yawallet
+    plan: free
