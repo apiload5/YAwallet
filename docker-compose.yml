@@ -1,54 +1,36 @@
+version: '3.8'
+
 services:
-  db:
-    image: postgres:16-alpine
-    restart: always
-    environment:
-      POSTGRES_DB: ${DB_NAME:-yawallet}
-      POSTGRES_USER: ${DB_USER:-yawallet_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-yawallet_user}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    restart: always
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   web:
     build: .
-    restart: always
-    env_file:
-      - .env
-    volumes:
-      - .:/app
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+    container_name: yawallet-web
     ports:
       - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=settings
+      - DEBUG=True
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/yawallet
+      - ADMIN_PHONE=923001234567
+      - ADMIN_PASSWORD=admin123
+      - ADMIN_NAME=Admin
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: gunicorn --config gunicorn.conf.py yawallet.wsgi:application
+      - db
+    volumes:
+      - .:/app
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+
+  db:
+    image: postgres:15-alpine
+    container_name: yawallet-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=yawallet
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
 
 volumes:
   postgres_data:
-  redis_data:
-  static_volume:
-  media_volume:
