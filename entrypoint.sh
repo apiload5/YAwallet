@@ -1,45 +1,29 @@
 #!/bin/bash
 
-set -e  # Exit on error
-
 echo "========================================"
-echo "  YaWallet - Building Application"
+echo "  YaWallet - Starting Application"
 echo "========================================"
 
-# Install Python dependencies
-echo "📦 Installing Python dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# Install Node.js dependencies (if any)
-if [ -f package.json ]; then
-    echo "📦 Installing Node.js dependencies..."
-    npm install
-fi
+# Set Django settings module
+export DJANGO_SETTINGS_MODULE=settings
 
 # Wait for database (if using PostgreSQL)
-echo "⏳ Waiting for database..."
-timeout 30 python -c "
-import time
-import os
-import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
-django.setup()
-from django.db import connections
-from django.db.utils import OperationalError
-for i in range(30):
-    try:
-        connections['default'].cursor()
-        print('Database is ready!')
-        break
-    except OperationalError:
-        time.sleep(1)
-else:
-    print('Database timeout, continuing anyway...')
-" || true
+if [ -n "$DATABASE_URL" ]; then
+    echo "⏳ Waiting for database..."
+    # Extract host and port from DATABASE_URL
+    DB_HOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\):\([0-9]*\)\/.*/\1/p')
+    DB_PORT=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\):\([0-9]*\)\/.*/\2/p')
+    
+    if [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
+        while ! nc -z $DB_HOST $DB_PORT; do
+            sleep 1
+        done
+        echo "✅ Database is ready!"
+    fi
+fi
 
 # Run migrations
-echo "🗄️ Running database migrations..."
+echo "🗄️ Running migrations..."
 python manage.py makemigrations accounts --noinput || true
 python manage.py makemigrations --noinput || true
 python manage.py migrate --noinput || true
@@ -48,17 +32,17 @@ python manage.py migrate --noinput || true
 echo "📁 Collecting static files..."
 python manage.py collectstatic --noinput || true
 
-# Create superuser (using updated command)
+# Create superuser
 echo "👤 Creating superuser..."
-if python manage.py create_admin; then
+if python manage.py create_admin 2>/dev/null; then
     echo "✅ Superuser created successfully!"
 else
-    echo "⚠️ Superuser creation failed, continuing..."
+    echo "⚠️ Superuser creation failed or already exists"
 fi
 
-# Create data directory if needed
-mkdir -p /app/media /app/staticfiles
+echo "========================================"
+echo "✅ Application is ready!"
+echo "========================================"
 
-echo "========================================"
-echo "✅ Build completed successfully!"
-echo "========================================"
+# Execute the main command
+exec "$@"
