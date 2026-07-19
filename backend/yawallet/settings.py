@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 from decouple import config
 from cryptography.fernet import Fernet
@@ -10,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY SETTINGS
 # ============================================
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-key')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -85,14 +86,27 @@ ROOT_URLCONF = 'yawallet.urls'
 WSGI_APPLICATION = 'yawallet.wsgi.application'
 
 # ============================================
-# DATABASE (SQLite for deployment)
+# DATABASE - FIXED: PostgreSQL for Render, SQLite for local
 # ============================================
 DATABASES = {
-    'default': {
+    'default': {}
+}
+
+# Check if DATABASE_URL is set (Render PostgreSQL)
+if os.environ.get('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True  # Required for Render PostgreSQL
+    )
+    print("✅ Using PostgreSQL database from DATABASE_URL")
+else:
+    # Fallback to SQLite for local development
+    DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
+    print("⚠️ Using SQLite database (local development)")
 
 # ============================================
 # AUTH USER MODEL
@@ -111,6 +125,10 @@ AUTHENTICATION_BACKENDS = [
 # ============================================
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise configuration for static files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -122,6 +140,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
@@ -134,6 +153,13 @@ REST_FRAMEWORK = {
 # ============================================
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:19006",
+    "https://yawallet.onrender.com",
+    "http://yawallet.onrender.com",
+]
 
 # ============================================
 # TRANSACTION FEES
@@ -196,3 +222,22 @@ JAZZMIN_SETTINGS = {
     "use_google_fonts_cdn": True,
     "show_ui_builder": True,
 }
+
+# ============================================
+# LOGGING CONFIGURATION (Optional)
+# ============================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
+
+print("✅ YaWallet settings loaded successfully!")
